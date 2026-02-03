@@ -30,3 +30,18 @@
 
 ### To train the EBM model, please look at train_cel_clwithtime_ebm_NOIND.py script
 ### For sampling and other calclations, please look at the scripts.
+
+### If you find this work useful, please cite our paper:
+
+```bibtex
+@article{
+wesego2024scorebased,
+title={Score-Based Multimodal Autoencoder},
+author={Daniel Wesego and Pedram Rooshenas},
+journal={Transactions on Machine Learning Research},
+issn={2835-8856},
+year={2024},
+url={https://openreview.net/forum?id=JbuP6UV3Fk},
+note={}
+}
+```
