@@ -1,6 +1,8 @@
 import torch
 import torch.nn as nn
 
+from unet_model import SinusoidalPositionEmbeddings
+
 class LSM(nn.Module):
 
     def __init__(self):
@@ -370,6 +372,277 @@ class LSMPoly64_sm(nn.Module):
     def forward(self, x):
         return self.layers(x)
 
+class ClwithTime(nn.Module):
+
+    def __init__(self, n_mod=5, size_z=64, n_class=10):
+        super().__init__()
+        self.size_z = size_z
+        self.n_mod = n_mod
+        self.n_class = n_class
+        self.time_mlp = nn.Sequential(
+            SinusoidalPositionEmbeddings(size_z*n_mod),
+            nn.Linear(size_z*n_mod, size_z*n_mod),
+            nn.GELU(),
+            nn.Linear(size_z*n_mod, size_z*n_mod),
+            )
+  
+        self.layer1 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer2 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer3 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer4 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer5 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer6 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),
+            nn.Linear(self.size_z*self.n_mod, self.n_class),)
+
+    def forward(self, x, t):
+        t = self.time_mlp(t)
+        l1 = self.layer1(x + t)
+        l2 = self.layer2(l1 + t)
+        l3 = self.layer3(l2 + t)
+        l4 = self.layer4(l3 + t)
+        l5 = self.layer5(l4 + t)
+        l6 = self.layer6(l5 + t)
+
+        return l6
+
+class ClwithTimeGlob(nn.Module):
+
+    def __init__(self, n_mod=5, size_z=64, n_class=1):
+        super().__init__()
+        self.size_z = size_z
+        self.n_mod = n_mod
+        self.n_class = n_class
+  
+        self.layer1 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer2 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer3 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer4 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer5 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer6 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod, self.size_z*self.n_mod),
+            nn.Softplus(),
+            nn.Linear(self.size_z*self.n_mod, self.n_class),)
+
+    def forward(self, x):
+        l1 = self.layer1(x)
+        l2 = self.layer2(l1)
+        l3 = self.layer3(l2)
+        l4 = self.layer4(l3)
+        l5 = self.layer5(l4)
+        l6 = self.layer6(l5)
+
+        return l6
+
+class ClwithTime2(nn.Module):
+
+    def __init__(self, n_mod=5, size_z=64, n_class=10):
+        super().__init__()
+        self.size_z = size_z
+        self.n_mod = n_mod
+        self.n_class = n_class
+        self.time_mlp = nn.Sequential(
+            SinusoidalPositionEmbeddings(size_z*n_mod),
+            nn.Linear(size_z*n_mod, size_z*n_mod),
+            nn.GELU(),
+            nn.Linear(size_z*n_mod, size_z*n_mod),
+            )
+  
+        self.layer1 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer2 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer3 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer4 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer5 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer6 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2, self.size_z*self.n_mod*2),
+            nn.Softplus(),
+            nn.Linear(self.size_z*self.n_mod*2, self.n_class),)
+
+    def forward(self, x, t):
+        t = self.time_mlp(t)
+        l1 = self.layer1(torch.cat([x, t], dim=-1))
+        l2 = self.layer2(torch.cat([l1, t], dim=-1))
+        l3 = self.layer3(torch.cat([l2, t], dim=-1))
+        l4 = self.layer4(torch.cat([l3, t], dim=-1))
+        l5 = self.layer5(torch.cat([l4, t], dim=-1))
+        l6 = self.layer6(torch.cat([l5, t], dim=-1))
+
+        return l6
+    
+class ClwithTime3(nn.Module):
+
+    def __init__(self, n_mod=5, size_z=64, n_class=10):
+        super().__init__()
+        self.size_z = size_z
+        self.n_mod = n_mod
+        self.n_class = n_class
+        self.time_mlp = nn.Sequential(
+            SinusoidalPositionEmbeddings(size_z*n_mod),
+            nn.Linear(size_z*n_mod, size_z*n_mod),
+            nn.GELU(),
+            nn.Linear(size_z*n_mod, size_z*n_mod),
+            )
+        
+        self.time_mlp_zm1 = nn.Sequential(
+            SinusoidalPositionEmbeddings(size_z),
+            nn.Linear(size_z, size_z),
+            nn.GELU(),
+            nn.Linear(size_z, size_z),
+            )
+
+        self.time_mlp_zm2 = nn.Sequential(
+            SinusoidalPositionEmbeddings(size_z),
+            nn.Linear(size_z, size_z),
+            nn.GELU(),
+            nn.Linear(size_z, size_z),
+            )
+  
+        self.layer1 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer2 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer3 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer4 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer5 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer6 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod*2),
+            nn.Softplus(),
+            nn.Linear(self.size_z*self.n_mod*2, self.n_class),)
+
+    def forward(self, x, t, zm1, zm2):
+        zm1 = torch.ones(x.shape[0], device=x.device) * (zm1 + 1)
+        zm2 = torch.ones(x.shape[0], device=x.device) * (zm2 + 1)
+        
+        t = self.time_mlp(t)
+        zm1 = self.time_mlp_zm1(zm1)
+        zm2 = self.time_mlp_zm2(zm2)
+
+        l1 = self.layer1(torch.cat([x, t, zm1, zm2], dim=-1))
+        l2 = self.layer2(torch.cat([l1, t, zm1, zm2], dim=-1))
+        l3 = self.layer3(torch.cat([l2, t, zm1, zm2], dim=-1))
+        l4 = self.layer4(torch.cat([l3, t, zm1, zm2], dim=-1))
+        l5 = self.layer5(torch.cat([l4 + x, t, zm1, zm2], dim=-1))
+        l6 = self.layer6(torch.cat([l5, t, zm1, zm2], dim=-1))
+
+        return l6
+    
+
+class ClwithTimeDeep(nn.Module):
+
+    def __init__(self, n_mod=5, size_z=64, n_class=10):
+        super().__init__()
+        self.size_z = size_z
+        self.n_mod = n_mod
+        self.n_class = n_class
+        self.time_mlp = nn.Sequential(
+            SinusoidalPositionEmbeddings(size_z*n_mod),
+            nn.Linear(size_z*n_mod, size_z*n_mod),
+            nn.GELU(),
+            nn.Linear(size_z*n_mod, size_z*n_mod),
+            )
+        
+        self.time_mlp_zm1 = nn.Sequential(
+            SinusoidalPositionEmbeddings(size_z),
+            nn.Linear(size_z, size_z),
+            nn.GELU(),
+            nn.Linear(size_z, size_z),
+            )
+
+        self.time_mlp_zm2 = nn.Sequential(
+            SinusoidalPositionEmbeddings(size_z),
+            nn.Linear(size_z, size_z),
+            nn.GELU(),
+            nn.Linear(size_z, size_z),
+            )
+  
+        self.layer1 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer2 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer3 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer4 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer5 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer6 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer7 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer8 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod),
+            nn.Softplus(),)
+        self.layer9 = nn.Sequential(
+            nn.Linear(self.size_z*self.n_mod*2 + 2*self.size_z, self.size_z*self.n_mod*2),
+            nn.Softplus(),
+            nn.Linear(self.size_z*self.n_mod*2, self.n_class),)
+
+    def forward(self, x, t, zm1, zm2):
+        zm1 = torch.ones(x.shape[0], device=x.device) * (zm1 + 1)
+        zm2 = torch.ones(x.shape[0], device=x.device) * (zm2 + 1)
+        
+        t = self.time_mlp(t)
+        zm1 = self.time_mlp_zm1(zm1)
+        zm2 = self.time_mlp_zm2(zm2)
+
+        l1 = self.layer1(torch.cat([x, t, zm1, zm2], dim=-1))
+        l2 = self.layer2(torch.cat([l1 + x, t, zm1, zm2], dim=-1))
+        l3 = self.layer3(torch.cat([l2 + x, t, zm1, zm2], dim=-1))
+        l4 = self.layer4(torch.cat([l3 + x, t, zm1, zm2], dim=-1))
+        l5 = self.layer5(torch.cat([l4 + x, t, zm1, zm2], dim=-1))
+        l6 = self.layer6(torch.cat([l5 + x, t, zm1, zm2], dim=-1))
+        l7 = self.layer7(torch.cat([l6 + x, t, zm1, zm2], dim=-1))
+        l8 = self.layer8(torch.cat([l7 + x, t, zm1, zm2], dim=-1))
+        l9 = self.layer9(torch.cat([l8, t, zm1, zm2], dim=-1))
+
+        return l9
+
 class LSMPoly64_deep(nn.Module):
 
     def __init__(self, n_mod=5, size_z=128):
@@ -621,6 +894,27 @@ class LSMPolyConv(nn.Module):
             )
 
     def forward(self, x):
+        return self.layers(x)
+    
+class Poly32energy(nn.Module):
+
+    def __init__(self):
+        super().__init__()
+  
+        self.layers = nn.Sequential(
+            nn.Linear(3*32*32, 1*32*20), 
+            nn.Softplus(),
+            nn.Linear(32*20, 32*10), 
+            nn.Softplus(),
+            nn.Linear(32*10, 32*10), 
+            nn.Softplus(),
+            nn.Linear(32*10, 128), 
+            nn.Softplus(),
+            nn.Linear(128,1),
+            )
+
+    def forward(self, x):
+        x = x.view(x.shape[0],-1)
         return self.layers(x)
 
 class Quad2Poly(nn.Module):
